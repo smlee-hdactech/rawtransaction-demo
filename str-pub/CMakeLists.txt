@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 
+project(stream-publish)
+
 include(FindBoost)
 include(FindOpenSSL)
 include(FindPkgConfig)
@@ -15,9 +17,9 @@ pkg_check_modules (HS_RPC REQUIRED hs_rpc)
 pkg_check_modules (HS_UTILS REQUIRED hs_utils)
 pkg_check_modules (HS_CRYPTO REQUIRED hs_crypto)
 
-add_executable(rawtx-demo main.cpp)
+add_executable(${PROJECT_NAME} main.cpp)
 
-target_include_directories(rawtx-demo 
+target_include_directories(${PROJECT_NAME}
     PUBLIC
     ${HS_HELPERS_INCLUDE_DIRS}
     ${HS_KEYS_INCLUDE_DIRS}
@@ -28,7 +30,7 @@ target_include_directories(rawtx-demo
     ${HS_CRYPTO_INCLUDE_DIRS}
     )
 
-target_link_libraries(rawtx-demo
+target_link_libraries(${PROJECT_NAME}
     PUBLIC
     ${HS_HELPERS_LIBRARIES}
     ${HS_KEYS_LIBRARIES}

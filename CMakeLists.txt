@@ -7,4 +7,5 @@ set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed ${CMAKE_SHARED_LINKER_FLAGS}")
 set(CMAKE_DEBUG_POSTFIX "-dbg")
 
 # subdirectories
-add_subdirectory(src)
+add_subdirectory(str-pub)
+add_subdirectory(ass-send)
