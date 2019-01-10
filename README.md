@@ -32,9 +32,9 @@ cd -
 
 ## hdac-sdk 개발용 라이브러리 설치
 ```
-wget https://github.com/smlee-hdactech/hdac-sdk/releases/download/v0.1.1/hdac-sdk-0.1.1-Linux.sh 
-chmod +x ./hdac-sdk-0.2.0-Linux.sh
-sudo ./hdac-sdk-0.1.1-Linux.sh --prefix=/usr/local --skip-license -n
+wget https://github.com/smlee-hdactech/hdac-sdk/releases/download/v0.1.1/hdac-sdk-0.2.2-Linux.sh 
+chmod +x ./hdac-sdk-0.2.2-Linux.sh
+sudo ./hdac-sdk-0.2.2-Linux.sh --prefix=/usr/local --skip-license -n
 ```
 
 ## rawtransaction-demo 빌드
