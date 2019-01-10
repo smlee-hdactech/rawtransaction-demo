@@ -121,52 +121,52 @@ string sendRawTransaction(const RpcClient& client, const string& rawTx)
 int main(int argc, char* argv[])
 {
     try {
-    RpcClient client("13.125.145.98", 4260, "hdacrpc", "1234", "kcc");
-    KeysHelperWithRpc helper(client);
+        RpcClient client("13.125.145.98", 4260, "hdacrpc", "1234", "kcc");
+        KeysHelperWithRpc helper(client);
 
-    // 1. parameter로부터 stream 이름, key 이름, item 값을 구한다.
-    string streamName(argv[1]);
-    string keyName(argv[2]);
-    string itemValue(argv[3]);
+        // 1. parameter로부터 stream 이름, key 이름, item 값을 구한다.
+        string streamName(argv[1]);
+        string keyName(argv[2]);
+        string itemValue(argv[3]);
 
-    // 2. 프라이빗 키와 퍼블릭 키를 생성하거나 로컬에 저장된 값을 얻어온다.
-    auto keyPairs = obtainKeyPairs(helper);
-    cout << "privateKey : " << keyPairs.privateKey << endl;
-    cout << "pubilcKey : " << keyPairs.publicKey << endl;
-    cout << "address : " << keyPairs.address << endl;
+        // 2. 프라이빗 키와 퍼블릭 키를 생성하거나 로컬에 저장된 값을 얻어온다.
+        auto keyPairs = obtainKeyPairs(helper);
+        cout << "privateKey : " << keyPairs.privateKey << endl;
+        cout << "pubilcKey : " << keyPairs.publicKey << endl;
+        cout << "address : " << keyPairs.address << endl;
 
-    // 3. 지갑주소에 대한 권한이 지정되어 있어야 한다. 즉, admin node에서, grant ${address} send
+        // 3. 지갑주소에 대한 권한이 지정되어 있어야 한다. 즉, admin node에서, grant ${address} send
 
-    // 4. 지갑주소에 대해서 import가 되어 있어야 한다.
-    importAddress(client, keyPairs.address);
+        // 4. 지갑주소에 대해서 import가 되어 있어야 한다.
+        importAddress(client, keyPairs.address);
 
-    // 5. address에 대한 unspent tx구하고, txid, vout, sciptPubKey를 추출해낸다.
-    auto unspent = chooseUnspent(client, keyPairs.address);
-    cout << "unspent txid: " << unspent.txid << endl;
-    cout << "unspent vout: " << unspent.vout << endl;
-    cout << "unspent scritpPubkey: " << unspent.scriptPubkey << endl;
+        // 5. address에 대한 unspent tx구하고, txid, vout, sciptPubKey를 추출해낸다.
+        auto unspent = chooseUnspent(client, keyPairs.address);
+        cout << "unspent txid: " << unspent.txid << endl;
+        cout << "unspent vout: " << unspent.vout << endl;
+        cout << "unspent scritpPubkey: " << unspent.scriptPubkey << endl;
 
-    // 6. stream의 create txid를 구한다.
-    auto createTxid = obtainCreateTxid(client, streamName);
-    cout << "create txid: " << createTxid << endl;
-    
-    // 7. 추출한 정보로부터 스트림을 발행하기 위한 raw-tx를 생성한다.
-    string rawTxHex = createStreamPublishTx(
-        keyName,
-        itemValue,
-        createTxid,
-        unspent.scriptPubkey,
-        unspent.txid,
-        unspent.vout,
-        "",
-        keyPairs.privateKey,
-        helper.privHelper()
-    );
-    cout << "raw-tx hex: " << rawTxHex << endl;
+        // 6. stream의 create txid를 구한다.
+        auto createTxid = obtainCreateTxid(client, streamName);
+        cout << "create txid: " << createTxid << endl;
 
-    // 8. 생성한 raw-tx를 전송한다.
-    string txid = sendRawTransaction(client, rawTxHex);
-    cout << "the id of tx sent: " << txid << endl;
+        // 7. 추출한 정보로부터 스트림을 발행하기 위한 raw-tx를 생성한다.
+        string rawTxHex = createStreamPublishTx(
+            keyName,
+            itemValue,
+            createTxid,
+            unspent.scriptPubkey,
+            unspent.txid,
+            unspent.vout,
+            "",
+            keyPairs.privateKey,
+            helper.privHelper()
+        );
+        cout << "raw-tx hex: " << rawTxHex << endl;
+
+        // 8. 생성한 raw-tx를 전송한다.
+        string txid = sendRawTransaction(client, rawTxHex);
+        cout << "the id of tx sent: " << txid << endl;
     } catch(exception &e)   {
         cerr << e.what() << endl;
         return -1;

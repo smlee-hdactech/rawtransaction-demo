@@ -8,6 +8,8 @@
 #include <helpers/hs_helpers.h>
 #include <rpc/hs_rpc.h>
 #include <rpc/rpcclient.h>
+#include <primitives/hs_primitives.h>
+#include <json_spirit/json_spirit_writer_template.h>
 
 using namespace std;
 using namespace json_spirit;
@@ -57,15 +59,14 @@ void importAddress(const RpcClient& client, const string& address)
     cout << "success import address, " << address << endl;
 }
 
-struct UnspentAssetInfo
+struct UnspentInfo
 {
     string txid;
     int vout;
     string scriptPubkey;
-    double qty;
 };
 
-UnspentAssetInfo chooseAssetUnspent(const RpcClient& client, const string& address, const string& assetName)
+UnspentInfo chooseUnspent(const RpcClient& client, const string& address)
 {
     string resultStr;
     if (!rpcResult(listunspent(client, address), resultStr)) {
@@ -81,61 +82,22 @@ UnspentAssetInfo chooseAssetUnspent(const RpcClient& client, const string& addre
     Array unspents = resultJson.get_array();
     if (unspents.empty())   {
         stringstream ostr;
-        ostr << "unspent is necessary for " << address << ", example: grant " << address << " send,receive";
+        ostr << "unspent is necessary for " << address << ", example: grant " << address << " send";
         throw ostr.str();
         //throw errorMsg;
     }
-
-    double unspentQty;
-    Object selected;
-    for (int i = 0; i < unspents.size(); i++) {
-        Value value = find_value(unspents[i].get_obj(), "assets");
-        if (value.type() == array_type && value.get_array().size() != 0) {
-            bool found = false;
-            Array assetInfo = value.get_array();
-            for (int i = 0; i < assetInfo.size(); i++) {
-            //for (const Object& assetInfo : value.get_array())   {
-                if (assetInfo[i].type() == obj_type)    {
-                    Value name = find_value(assetInfo[i].get_obj(), "name");
-                    if (name.get_str() == assetName)   {
-                        found = true;
-                        Value qty = find_value(assetInfo[i].get_obj(), "qty");
-                        unspentQty = qty.get_real();
-                        break;
-                    }
-                }
-            }
-            if (found == true)  {
-                selected = unspents[i].get_obj();
-                break;
-            }
-        }
-    }
-
-    if (selected.empty())   {
-        stringstream ostr;
-        ostr << "unspent is necessary for " << address << ", example: issue " << address << " " << assetName << " " << 100000;
-        throw ostr.str();
-    }
-
     // TODO : Does asset-existence matter?
     string txid = find_value(unspents[0].get_obj(), "txid").get_str();
     int vout = find_value(unspents[0].get_obj(), "vout").get_int();
     string scriptPubkey = find_value(unspents[0].get_obj(), "scriptPubKey").get_str();
 
-    return {txid, vout, scriptPubkey, unspentQty};
+    return {txid, vout, scriptPubkey};
 }
 
-struct IssueTxInfo
-{
-    string txid;
-    int multiple;
-};
-
-IssueTxInfo obtainIssueTxInfo(const RpcClient& client, const string& assetName)
+string obtainCreateTxid(const RpcClient& client, const string& streamName)
 {
     string resultStr;
-    if (!rpcResult(listassets(client, assetName), resultStr)) {
+    if (!rpcResult(liststreams(client, streamName), resultStr)) {
         throw "error on importaddress";
     }
 
@@ -145,10 +107,7 @@ IssueTxInfo obtainIssueTxInfo(const RpcClient& client, const string& assetName)
         throw "wrong result format";
     }
     Array streams = resultJson.get_array();
-    string issueTxid = find_value(streams[0].get_obj(), "issuetxid").get_str();
-    int multiple = find_value(streams[0].get_obj(), "multiple").get_int();
-
-    return {issueTxid, multiple};
+    return find_value(streams[0].get_obj(), "createtxid").get_str();
 }
 
 string sendRawTransaction(const RpcClient& client, const string& rawTx)
@@ -167,10 +126,10 @@ int main(int argc, char* argv[])
         RpcClient client("13.125.145.98", 4260, "hdacrpc", "1234", "kcc");
         KeysHelperWithRpc helper(client);
 
-        // 1. parameter로부터 전송할 지갑주소, 자산 이름, 전송할 자산량을 구한다.
-        string toAddr(argv[1]);
-        string assetName(argv[2]);
-        int assetAmount = stoi(argv[3]);
+        // 1. parameter로부터 stream 이름, key 이름, item 값을 구한다.
+        string streamName(argv[1]);
+        string keyName(argv[2]);
+        string itemValue(argv[3]);
 
         // 2. 프라이빗 키와 퍼블릭 키를 생성하거나 로컬에 저장된 값을 얻어온다.
         auto keyPairs = obtainKeyPairs(helper);
@@ -183,29 +142,34 @@ int main(int argc, char* argv[])
         // 4. 지갑주소에 대해서 import가 되어 있어야 한다.
         importAddress(client, keyPairs.address);
 
-        // 5. address에 대한 unspent tx구하고, txid, vout, sciptPubKey, 지불되지 않은 금액을 추출해낸다.
-        auto unspent = chooseAssetUnspent(client, keyPairs.address, assetName);
+        // 5. address에 대한 unspent tx구하고, txid, vout, sciptPubKey를 추출해낸다.
+        auto unspent = chooseUnspent(client, keyPairs.address);
         cout << "unspent txid: " << unspent.txid << endl;
         cout << "unspent vout: " << unspent.vout << endl;
         cout << "unspent scritpPubkey: " << unspent.scriptPubkey << endl;
-        cout << "unspent qty: " << unspent.qty << endl;
 
         // 6. stream의 create txid를 구한다.
-        auto issueTxInfo = obtainIssueTxInfo(client, assetName);
-        cout << "issue txid: " << issueTxInfo.txid << endl;
+        auto createTxid = obtainCreateTxid(client, streamName);
+        cout << "create txid: " << createTxid << endl;
 
-        // 7. 추출한 정보로부터 자산을 전송하기 위한 raw-tx를 생성한다.
-        string rawTxHex = createAssetSendTx(toAddr,
-                    assetAmount, issueTxInfo.txid, issueTxInfo.multiple,
-                    unspent.scriptPubkey, unspent.txid, unspent.vout,
-                    unspent.qty, "", keyPairs.privateKey,
-                    helper.privHelper(),
-                    helper.addrHelper());
+        // 7. 추출한 정보로부터 스트림을 발행하기 위한 raw-tx를 생성한다.
+        string rawTxHex = createStreamPublishTx(
+            keyName,
+            itemValue,
+            createTxid,
+            unspent.scriptPubkey,
+            unspent.txid,
+            unspent.vout,
+            "",
+            keyPairs.privateKey,
+            helper.privHelper()
+        );
         cout << "raw-tx hex: " << rawTxHex << endl;
 
-        // 8. 생성한 raw-tx를 전송한다.
-        string txid = sendRawTransaction(client, rawTxHex);
-        cout << "the id of tx sent: " << txid << endl;
+        // 8. 생성한 raw tx를 분석한다.
+        Object parsed = analyzeTx(rawTxHex);
+        string strParsed = write_string(Value(parsed), true);
+        cout << strParsed << endl;
     } catch(exception &e)   {
         cerr << e.what() << endl;
         return -1;

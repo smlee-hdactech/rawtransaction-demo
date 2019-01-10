@@ -16,6 +16,7 @@ find_package(OpenSSL REQUIRED)
 pkg_check_modules (SECP256K1 REQUIRED libsecp256k1)
 pkg_check_modules (HS_HELPERS REQUIRED hs_helpers)
 pkg_check_modules (HS_KEYS REQUIRED hs_keys)
+pkg_check_modules (HS_PRIMITIVES REQUIRED hs_primitives)
 pkg_check_modules (HS_SCRIPT REQUIRED hs_script)
 pkg_check_modules (HS_STRUCTS REQUIRED hs_structs)
 pkg_check_modules (HS_RPC REQUIRED hs_rpc)
@@ -25,4 +26,5 @@ pkg_check_modules (HS_CRYPTO REQUIRED hs_crypto)
 # subdirectories
 add_subdirectory(ass-send)
 add_subdirectory(str-pub)
+add_subdirectory(analyze-tx)
 
