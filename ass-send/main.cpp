@@ -93,13 +93,13 @@ UnspentAssetInfo chooseAssetUnspent(const RpcClient& client, const string& addre
         if (value.type() == array_type && value.get_array().size() != 0) {
             bool found = false;
             Array assetInfo = value.get_array();
-            for (int i = 0; i < assetInfo.size(); i++) {
+            for (int j = 0; j < assetInfo.size(); j++) {
             //for (const Object& assetInfo : value.get_array())   {
-                if (assetInfo[i].type() == obj_type)    {
-                    Value name = find_value(assetInfo[i].get_obj(), "name");
+                if (assetInfo[j].type() == obj_type)    {
+                    Value name = find_value(assetInfo[j].get_obj(), "name");
                     if (name.get_str() == assetName)   {
                         found = true;
-                        Value qty = find_value(assetInfo[i].get_obj(), "qty");
+                        Value qty = find_value(assetInfo[j].get_obj(), "qty");
                         unspentQty = qty.get_real();
                         break;
                     }
@@ -119,9 +119,9 @@ UnspentAssetInfo chooseAssetUnspent(const RpcClient& client, const string& addre
     }
 
     // TODO : Does asset-existence matter?
-    string txid = find_value(unspents[0].get_obj(), "txid").get_str();
-    int vout = find_value(unspents[0].get_obj(), "vout").get_int();
-    string scriptPubkey = find_value(unspents[0].get_obj(), "scriptPubKey").get_str();
+    string txid = find_value(selected, "txid").get_str();
+    int vout = find_value(selected, "vout").get_int();
+    string scriptPubkey = find_value(selected, "scriptPubKey").get_str();
 
     return {txid, vout, scriptPubkey, unspentQty};
 }
